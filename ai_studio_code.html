@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoService — Автосервис басқару жүйесі</title>
+  <style>
+    :root {
+      --sidebar-bg: #0b1628;
+      --sidebar-hover: #15243d;
+      --sidebar-card: #132138;
+      --primary: #1d64f2;
+      --primary-hover: #1552cc;
+      --primary-soft: #eff6ff;
+      --bg: #f3f6fb;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e5eaf2;
+      --success: #16a34a;
+      --success-soft: #dcfce7;
+      --warning: #d97706;
+      --warning-soft: #fef3c7;
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
+      --purple: #7c3aed;
+      --purple-soft: #ede9fe;
+      --radius: 14px;
+      --shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 256px;
+      background: var(--sidebar-bg);
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 14px;
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      z-index: 200;
+      transition: transform 0.25s ease;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 10px 22px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 16px;
+    }
+    .brand-icon { color: #fff; display: grid; place-items: center; }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 0.72rem; color: #94a3b8; }
+
+    .menu-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 9px;
+      color: #cbd5e1;
+      background: transparent;
+      border: none;
+      width: 100%;
+      text-align: left;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.15s;
+      font-family: inherit;
+    }
+    .menu-item:hover { background: var(--sidebar-hover); color: #fff; }
+    .menu-item.active {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(29, 100, 242, 0.35);
+    }
+    .menu-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    .sidebar-footer {
+      background: var(--sidebar-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .sidebar-footer-title { font-size: 0.78rem; font-weight: 600; color: #fff; }
+    .sidebar-footer-text { font-size: 0.74rem; color: #94a3b8; }
+
+    /* Main Wrapper */
+    .main-wrapper {
+      flex: 1;
+      margin-left: 256px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* Top Header */
+    .topbar {
+      height: 68px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 14px; flex: 1; }
+    .mobile-menu-btn {
+      display: none;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      cursor: pointer;
+      place-items: center;
+    }
+    .search-box { position: relative; width: 100%; max-width: 420px; }
+    .search-box svg {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%); color: #94a3b8; width: 16px; height: 16px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 9px 14px 9px 38px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #f8fafc;
+      font-size: 0.88rem;
+      font-family: inherit;
+    }
+    .search-box input:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .portal-switch-btn {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .portal-switch-btn:hover { background: #dbeafe; }
+
+    .notif-btn {
+      position: relative;
+      background: transparent;
+      border: none;
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: #475569;
+    }
+    .notif-btn:hover { background: #f1f5f9; }
+    .notif-badge {
+      position: absolute;
+      top: 2px; right: 2px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      padding: 0 4px;
+    }
+    .divider-v { width: 1px; height: 28px; background: var(--border); }
+
+    .profile-trigger {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      text-align: left;
+      font-family: inherit;
+    }
+    .profile-trigger:hover { background: #f8fafc; }
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #475569;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .profile-name { font-size: 0.86rem; font-weight: 600; color: var(--text); }
+    .profile-role { font-size: 0.74rem; color: var(--muted); }
+
+    /* Content Area */
+    .content { padding: 24px 28px 48px; max-width: 1380px; width: 100%; margin: 0 auto; }
+    .page-view { display: none; }
+    .page-view.active { display: block; }
+
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .page-head h1 { font-size: 1.55rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .page-sub { font-size: 0.88rem; color: var(--muted); margin-top: 2px; }
+
+    /* Buttons */
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      border: 1px solid transparent;
+      padding: 10px 18px;
+      border-radius: 9px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: 0.15s;
+      font-family: inherit;
+      text-decoration: none;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 7px; }
+    .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .btn-success { background: var(--success); }
+    .btn-danger { background: var(--danger); }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .kpi-icon-box {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .kpi-icon-box.blue { background: #e8f1ff; color: var(--primary); }
+    .kpi-icon-box.amber { background: #fef3c7; color: #d97706; }
+    .kpi-icon-box.green { background: #dcfce7; color: #16a34a; }
+    .kpi-icon-box.purple { background: #ede9fe; color: #7c3aed; }
+
+    .kpi-label { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+    .kpi-val { font-size: 1.55rem; font-weight: 700; color: var(--text); margin: 2px 0; letter-spacing: -0.02em; }
+    .kpi-trend { font-size: 0.78rem; color: var(--success); font-weight: 600; }
+    .kpi-trend span { color: var(--muted); font-weight: 400; margin-left: 4px; }
+
+    /* Cards & Charts */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .charts-row .card { margin-bottom: 0; }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .card-title { font-size: 1.02rem; font-weight: 700; color: var(--text); }
+    .link-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 18px;
+      flex-wrap: wrap;
+      padding-top: 10px;
+    }
+    .legend-list { display: flex; flex-direction: column; gap: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 10px; font-size: 0.86rem; color: #334155; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    th {
+      text-align: left;
+      padding: 11px 12px;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.8rem;
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+    }
+    td {
+      padding: 13px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafcff; }
+    .order-id { color: var(--primary); font-weight: 600; cursor: pointer; }
+    .money { font-weight: 700; color: var(--text); }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 0.77rem;
+      font-weight: 600;
+    }
+    .st-completed { background: #dcfce7; color: #15803d; }
+    .st-in_progress { background: #dbeafe; color: #1d4ed8; }
+    .st-pending { background: #fef3c7; color: #b45309; }
+    .st-diagnostics { background: #e0f2fe; color: #0369a1; }
+
+    .eye-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      width: 32px; height: 32px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: #64748b;
+    }
+    .eye-btn:hover { background: #f1f5f9; color: var(--primary); border-color: var(--border); }
+
+    /* Forms & Modals */
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 5px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      background: #fff;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+
+    .slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .slot-btn {
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: #fff;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .slot-btn.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .slot-btn:disabled { background: #f1f5f9; color: #94a3b8; text-decoration: line-through; cursor: not-allowed; }
+
+    .schedule-grid { display: grid; grid-template-columns: 80px repeat(3, 1fr); gap: 10px; min-width: 680px; }
+    .sch-head { background: var(--sidebar-bg); color: #fff; padding: 10px; border-radius: 8px; text-align: center; font-size: 0.84rem; font-weight: 600; }
+    .sch-time { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 0.86rem; }
+    .sch-cell { border: 1px dashed #cbd5e1; border-radius: 8px; padding: 9px; min-height: 70px; background: #fafafa; display: flex; flex-direction: column; justify-content: center; }
+    .sch-cell.occupied { border: 1px solid #bfdbfe; background: var(--primary-soft); justify-content: space-between; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      place-items: center;
+      z-index: 500;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: grid; }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.22);
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .close-btn {
+      background: #f1f5f9;
+      border: none;
+      width: 30px; height: 30px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; margin-top: 8px; }
+    .media-thumb { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #0f172a; }
+    .media-thumb img, .media-thumb video { width: 100%; height: 100px; object-fit: cover; display: block; }
+    .media-cap { font-size: 0.72rem; color: #f8fafc; padding: 4px 7px; background: #0f172a; }
+
+    .auth-switch { display: grid; grid-template-columns: 1fr 1fr; background: #f1f5f9; padding: 4px; border-radius: 8px; margin-bottom: 16px; }
+    .auth-tab { border: none; background: transparent; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 0.86rem; cursor: pointer; color: var(--muted); }
+    .auth-tab.active { background: #fff; color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+    .client-portal-banner {
+      background: linear-gradient(135deg, #0b1628, #1d4ed8);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .chip {
+      display: inline-block;
+      background: #e2e8f0;
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 6px;
+      margin-top: 6px;
+    }
+    .chip:hover { background: var(--primary); color: #fff; }
+
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: var(--sidebar-bg);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 9px;
+      font-size: 0.86rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.22);
+      display: none;
+      z-index: 999;
+    }
+
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 860px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrapper { margin-left: 0; }
+      .mobile-menu-btn { display: grid; }
+    }
+    @media (max-width: 560px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div>
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+            <circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">AutoService</div>
+          <div class="brand-sub">Автосервис басқару жүйесі</div>
+        </div>
+      </div>
+
+      <nav class="menu-list">
+        <button class="menu-item active" onclick="navigate('dashboard', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Басқару панелі
+        </button>
+        <button class="menu-item" onclick="navigate('orders', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Тапсырыстар
+        </button>
+        <button class="menu-item" onclick="navigate('clients', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Клиенттер
+        </button>
+        <button class="menu-item" onclick="navigate('cars', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L16 10l-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9L2 11v5c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+          Автокөліктер
+        </button>
+        <button class="menu-item" onclick="navigate('services', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          Қызметтер
+        </button>
+        <button class="menu-item" onclick="navigate('warehouse', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Қойма (бөлшектер)
+        </button>
+        <button class="menu-item" onclick="navigate('payments', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Төлемдер
+        </button>
+        <button class="menu-item" onclick="navigate('reports', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Есептер
+        </button>
+        <button class="menu-item" onclick="navigate('settings', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Баптаулар
+        </button>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" style="flex-shrink:0;">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <div>
+        <div class="sidebar-footer-title">Автосервис</div>
+        <div class="sidebar-footer-text" id="sidebar-hours">Жұмыс режимі: 09:00 – 19:00</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="global-search" placeholder="Іздеу..." oninput="handleGlobalSearch()" />
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button class="portal-switch-btn" onclick="navigate('client-portal', null)">Клиент порталы (Онлайн жазылу)</button>
+        <button class="notif-btn" onclick="openNotificationsPanel()" title="Хабарламалар">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge" id="notif-badge">3</span>
+        </button>
+        <div class="divider-v"></div>
+        <button class="profile-trigger" onclick="openAuthModal('login')">
+          <div class="avatar" id="top-avatar">Ә</div>
+          <div>
+            <div class="profile-name" id="top-user-name">Әкімші</div>
+            <div class="profile-role" id="top-user-role">Администратор</div>
+          </div>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <section id="view-dashboard" class="page-view active">
+        <div class="page-head">
+          <div>
+            <h1>Басқару панелі</h1>
+            <div class="page-sub">Автосервистің жалпы жұмысы туралы мәлімет</div>
+          </div>
+          <button class="btn" onclick="openNewOrderModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Жаңа тапсырыс
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-box blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+            </div>
+            <div>
+              <div class="kpi-label">Барлық тапсырыс</div>
+              <div class="kpi-val" id="kpi-total">0</div>
+              <div class="kpi-trend">↑ +12% <span>Өткен аймен салыстырғанда</span></div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-box amber">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div>
+              <div class="kpi-label">Жөндеуде</div>
+              <div class="kpi-val" id="kpi-active">0</div>
+              <div class="kpi-trend">↑ +6%</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-box green">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+              <div class="kpi-label">Аяқталған</div>
+              <div class="kpi-val" id="kpi-done">0</div>
+              <div class="kpi-trend">↑ +18%</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-box purple">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.66 3.13 3 7 3s7-1.34 7-3V6"/><path d="M5 12v6c0 1.66 3.13 3 7 3s7-1.34 7-3v-6"/></svg>
+            </div>
+            <div>
+              <div class="kpi-label">Жалпы түсім</div>
+              <div class="kpi-val" id="kpi-revenue">0 ₸</div>
+              <div class="kpi-trend">↑ +21%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">Тапсырыстар динамикасы</div>
+              <span style="font-size:0.78rem; color:var(--muted);">Апта күндері бойынша</span>
+            </div>
+            <div id="line-chart-container"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div class="card-title">Тапсырыстар мәртебесі</div></div>
+            <div class="donut-wrap" id="donut-chart-container"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Соңғы тапсырыстар</div>
+            <button class="link-btn" onclick="navigate('orders', document.querySelectorAll('.menu-item')[1])">Барлық тапсырыстар →</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>№</th><th>Клиент</th><th>Автокөлік</th><th>Қызмет түрі</th><th>Сомасы</th><th>Мәртебесі</th><th>Күні</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="recent-orders-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-orders" class="page-view">
+        <div class="page-head">
+          <div>
+            <h1>Тапсырыстар және бокстар кестесі</h1>
+            <div class="page-sub">Тапсырыстарды басқару, фото-есеп жүктеу және бокс уақытын бақылау</div>
+          </div>
+          <button class="btn" onclick="openNewOrderModal()">+ Жаңа тапсырыс</button>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <input type="text" id="orders-search" style="width:250px;" placeholder="Іздеу (№, клиент, көлік)..." oninput="renderAllOrders()" />
+              <select id="orders-filter" style="width:200px;" onchange="renderAllOrders()">
+                <option value="all">Барлық мәртебелер</option>
+                <option value="pending">Қабылданды</option>
+                <option value="diagnostics">Диагностикада</option>
+                <option value="in_progress">Жөндеуде</option>
+                <option value="completed">Аяқталды</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>№</th><th>Клиент</th><th>Автокөлік</th><th>Бокс / Уақыт</th><th>Қызмет түрі</th><th>Шебер</th><th>Сомасы</th><th>Мәртебесі</th><th>Әрекет</th>
+                </tr>
+              </thead>
+              <tbody id="all-orders-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Бокстар мен тайм-слоттар күнтізбесі</div>
+            <input type="date" id="admin-schedule-date" style="width:auto;" onchange="renderBoxMatrix()" />
+          </div>
+          <div class="table-wrap"><div class="schedule-grid" id="admin-box-matrix"></div></div>
+        </div>
+      </section>
+
+      <section id="view-clients" class="page-view">
+        <div class="page-head">
+          <div><h1>Клиенттер базасы</h1><div class="page-sub">Тіркелген клиенттер мен олардың тапсырыс тарихы</div></div>
+          <button class="btn" onclick="openAuthModal('register')">+ Клиент тіркеу</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Аты-жөні</th><th>Телефон</th><th>Email</th><th>Автокөлігі</th><th>Мем. нөмірі</th><th>Тапсырыстар</th></tr></thead>
+              <tbody id="clients-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-cars" class="page-view">
+        <div class="page-head"><div><h1>Автокөліктер тізілімі</h1><div class="page-sub">Сервисте қызмет көрсетілген көліктер</div></div></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Мем. нөмірі</th><th>Маркасы және моделі</th><th>Иесі</th><th>Соңғы қызметі</th><th>Соңғы мәртебесі</th></tr></thead>
+              <tbody id="cars-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-services" class="page-view">
+        <div class="page-head"><div><h1>Қызметтер прайс-парағы</h1><div class="page-sub">Автосервис көрсететін қызметтер мен бағалар</div></div></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Код</th><th>Санаты</th><th>Қызмет атауы</th><th>Орындалу уақыты</th><th>Бағасы</th></tr></thead>
+              <tbody id="services-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-warehouse" class="page-view">
+        <div class="page-head"><div><h1>Қойма (қосалқы бөлшектер)</h1><div class="page-sub">Шығын материалдары мен бөлшектер қалдығы</div></div></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Артикул</th><th>Атауы</th><th>Бағасы</th><th>Қалдығы</th><th>Күйі</th><th>Есептеу</th></tr></thead>
+              <tbody id="warehouse-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-payments" class="page-view">
+        <div class="page-head"><div><h1>Төлемдер және касса</h1><div class="page-sub">Тапсырыстар бойынша қаржылық есеп</div></div></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Тапсырыс №</th><th>Клиент</th><th>Қызмет</th><th>Сомасы</th><th>Төлем түрі</th><th>Төлем күйі</th></tr></thead>
+              <tbody id="payments-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-reports" class="page-view">
+        <div class="page-head"><div><h1>Есептер және хабарламалар журналы</h1><div class="page-sub">Шеберлер тиімділігі және WhatsApp / Telegram хабарлама тарихы</div></div></div>
+        <div class="card"><div class="card-head"><div class="card-title">Механиктер жүктемесі</div></div><div id="mechanics-report"></div></div>
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">WhatsApp / Telegram хабарламалар журналы</div>
+            <button class="btn btn-outline btn-sm" onclick="clearMessageLogs()">Тазалау</button>
+          </div>
+          <div id="messages-log-box"></div>
+        </div>
+      </section>
+
+      <section id="view-settings" class="page-view">
+        <div class="page-head"><div><h1>Жүйе баптаулары</h1><div class="page-sub">Сервис атауы, жұмыс уақыты және дерекқор</div></div></div>
+        <div class="card" style="max-width:560px;">
+          <div class="form-group"><label>Автосервис жұмыс режимі</label><input type="text" id="setting-hours" value="09:00 – 19:00" /></div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn" onclick="saveSettings()">Сақтау</button>
+            <button class="btn btn-outline" onclick="resetAllDemo()">Демо деректерді қалпына келтіру</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-client-portal" class="page-view">
+        <div class="client-portal-banner">
+          <div>
+            <h1 style="font-size:1.5rem; margin-bottom:6px;">Клиент порталы — Онлайн жазылу және бақылау</h1>
+            <p style="font-size:0.9rem; color:#dbeafe;">Тіркелген клиенттер өзінің тапсырыстарын, шебердің фото-есебін көріп, жөндеуге онлайн келісім бере алады.</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" style="background:#fff; color:#0f172a;" onclick="openAuthModal('register')">Тіркелу / Кіру</button>
+            <button class="btn btn-outline" style="background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.25);" onclick="navigate('dashboard', document.querySelectorAll('.menu-item')[0])">Басқару панеліне оралу</button>
+          </div>
+        </div>
+
+        <div class="charts-row" style="grid-template-columns:1fr 1fr;">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Онлайн тапсырыс беру (Бокс және уақыт)</div></div>
+            <form id="client-booking-form">
+              <div class="form-grid-2">
+                <div class="form-group"><label>Аты-жөніңіз *</label><input type="text" id="cb-name" required /></div>
+                <div class="form-group"><label>Телефон *</label><input type="tel" id="cb-phone" placeholder="+7 777 123 45 67" required /></div>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group"><label>Автокөлік *</label><input type="text" id="cb-car" placeholder="Toyota Camry 70" required /></div>
+                <div class="form-group"><label>Мем. нөмірі *</label><input type="text" id="cb-plate" placeholder="777 AAA 01" required /></div>
+              </div>
+              <div class="form-group"><label>Қызмет түрі *</label><select id="cb-service" required></select></div>
+              <div class="form-grid-2">
+                <div class="form-group"><label>Күні *</label><input type="date" id="cb-date" required onchange="renderClientBookingSlots()" /></div>
+                <div class="form-group"><label>Бокс *</label>
+                  <select id="cb-box" onchange="renderClientBookingSlots()">
+                    <option value="Бокс 1">Бокс 1</option><option value="Бокс 2">Бокс 2</option><option value="Бокс 3">Бокс 3</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Уақыт (Тайм-слот) * <small id="cb-slot-info" style="color:var(--primary);"></small></label>
+                <div class="slots-grid" id="cb-slots"></div>
+                <input type="hidden" id="cb-time" />
+              </div>
+              <button type="submit" class="btn" style="width:100%;">Тапсырыс беру</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div class="card-title">Тапсырыс күйін тексеру және фото-есеп</div></div>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="cb-track-input" placeholder="Мысалы: #0127 немесе 540 KZA 02" />
+              <button class="btn" onclick="clientTrackOrder()">Тексеру</button>
+            </div>
+            <div style="margin-top:6px;">
+              <small style="color:var(--muted);">Жылдам тексеру:</small>
+              <span class="chip" onclick="quickClientTrack('#0127')">#0127 (Фото-есеп бар)</span>
+              <span class="chip" onclick="quickClientTrack('#0128')">#0128 (Аяқталды)</span>
+            </div>
+            <div id="cb-track-result" style="margin-top:16px;"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- МОДАЛЬ: ЖАҢА ТАПСЫРЫС -->
+<div class="modal-backdrop" id="new-order-modal">
+  <div class="modal">
+    <div class="modal-head"><h3>Жаңа тапсырыс қосу</h3><button class="close-btn" onclick="closeModal('new-order-modal')">×</button></div>
+    <form id="admin-order-form">
+      <div class="form-grid-2">
+        <div class="form-group"><label>Клиент аты-жөні *</label><input type="text" id="ao-name" required /></div>
+        <div class="form-group"><label>Телефон *</label><input type="tel" id="ao-phone" placeholder="+7 777 ..." required /></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><label>Автокөлік *</label><input type="text" id="ao-car" placeholder="Kia K5" required /></div>
+        <div class="form-group"><label>Мем. нөмірі *</label><input type="text" id="ao-plate" placeholder="123 ABC 01" required /></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><label>Қызмет түрі *</label><select id="ao-service"></select></div>
+        <div class="form-group"><label>Шебер</label><select id="ao-mech"></select></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><label>Күні *</label><input type="date" id="ao-date" required /></div>
+        <div class="form-group"><label>Бокс / Уақыт</label>
+          <div style="display:flex; gap:6px;">
+            <select id="ao-box"><option>Бокс 1</option><option>Бокс 2</option><option>Бокс 3</option></select>
+            <select id="ao-time"><option>09:00</option><option>10:30</option><option>12:00</option><option>14:00</option><option>15:30</option><option>17:00</option></select>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn" style="width:100%;">Тапсырысты сақтау</button>
+    </form>
+  </div>
+</div>
+
+<!-- МОДАЛЬ: ТАПСЫРЫС МӘЛІМЕТІ -->
+<div class="modal-backdrop" id="detail-modal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="detail-title">Тапсырыс мәліметі</h3><button class="close-btn" onclick="closeModal('detail-modal')">×</button></div>
+    <input type="hidden" id="detail-id" />
+    <div id="detail-info" style="font-size:0.88rem; margin-bottom:14px; background:#f8fafc; padding:12px; border-radius:8px; border:1px solid var(--border);"></div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label>Мәртебесі</label>
+        <select id="detail-status">
+          <option value="pending">Қабылданды</option>
+          <option value="diagnostics">Диагностикада</option>
+          <option value="in_progress">Жөндеуде</option>
+          <option value="completed">Аяқталды</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Жауапты шебер</label><select id="detail-mech"></select></div>
+    </div>
+    <div class="form-group">
+      <label>Шебердің фото/видео есебі және қорытындысы</label>
+      <textarea id="detail-comment" rows="2" placeholder="Ақау сипаттамасы..."></textarea>
+      <input type="file" id="detail-file" accept="image/*,video/*" style="margin-top:8px;" onchange="uploadDetailMedia(this)" />
+      <div style="margin-top:4px;">
+        <span class="chip" onclick="addDemoPhoto('brake')">+ Тежегіш фотосы</span>
+        <span class="chip" onclick="addDemoPhoto('oil')">+ Май сүзгісі фотосы</span>
+      </div>
+      <div id="detail-media-grid" class="media-grid"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:16px; border-top:1px solid var(--border); padding-top:14px;">
+      <div style="display:flex; gap:6px;">
+        <a id="detail-wa-link" href="#" target="_blank" class="btn btn-success btn-sm">WhatsApp жіберу</a>
+        <button type="button" class="btn btn-outline btn-sm" onclick="sendTelegramSim()">Telegram Bot</button>
+      </div>
+      <button type="button" class="btn btn-sm" onclick="saveOrderDetails()">Өзгерістерді сақтау</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬ: ТІРКЕЛУ ЖӘНЕ КІРУ -->
+<div class="modal-backdrop" id="auth-modal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head"><h3 id="auth-title">Жүйеге кіру</h3><button class="close-btn" onclick="closeModal('auth-modal')">×</button></div>
+    <div class="auth-switch">
+      <button type="button" class="auth-tab active" id="atab-login" onclick="switchAuthTab('login')">Кіру</button>
+      <button type="button" class="auth-tab" id="atab-reg" onclick="switchAuthTab('register')">Тіркелу</button>
+    </div>
+    <form id="login-form">
+      <div class="form-group"><label>Email немесе телефон *</label><input type="text" id="l-id" placeholder="admin@autoservice.kz" required /></div>
+      <div class="form-group"><label>Құпиясөз *</label><input type="password" id="l-pass" placeholder="••••••" required /></div>
+      <div id="l-err" style="color:var(--danger); font-size:0.82rem; margin-bottom:10px; display:none;"></div>
+      <button type="submit" class="btn" style="width:100%;">Кіру</button>
+      <div style="margin-top:12px; padding:10px; background:#f8fafc; border-radius:8px; font-size:0.78rem; color:var(--muted);">
+        Демо-кіру: <code>admin@autoservice.kz</code> / <code>admin123</code> немесе <code>nurlan@mail.kz</code> / <code>1234</code>
+      </div>
+    </form>
+    <form id="reg-form" style="display:none;">
+      <div class="form-group"><label>Аты-жөні *</label><input type="text" id="r-name" required /></div>
+      <div class="form-grid-2">
+        <div class="form-group"><label>Телефон *</label><input type="tel" id="r-phone" placeholder="+7 777 ..." required /></div>
+        <div class="form-group"><label>Email *</label><input type="email" id="r-email" required /></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><label>Автокөлік *</label><input type="text" id="r-car" placeholder="Toyota Camry" required /></div>
+        <div class="form-group"><label>Мем. нөмірі *</label><input type="text" id="r-plate" placeholder="777 AAA 01" required /></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><label>Құпиясөз *</label><input type="password" id="r-pass" minlength="4" required /></div>
+        <div class="form-group"><label>Растау *</label><input type="password" id="r-pass2" minlength="4" required /></div>
+      </div>
+      <div id="r-err" style="color:var(--danger); font-size:0.82rem; margin-bottom:10px; display:none;"></div>
+      <button type="submit" class="btn" style="width:100%;">Тіркелу</button>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const TODAY_ISO = new Date().toISOString().split("T")[0];
+  const BOXES = ["Бокс 1", "Бокс 2", "Бокс 3"];
+  const SLOTS = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00"];
+  const MECHANICS = ["Тағайындалмаған", "Қайрат Б.", "Дәурен Т.", "Ержан М.", "Алексей В."];
+
+  const SERVICES = [
+    { id: 1, cat: "Техникалық қызмет", name: "Май ауыстыру", price: 25000, duration: "45 мин" },
+    { id: 2, cat: "Диагностика", name: "Толық диагностика", price: 15000, duration: "40 мин" },
+    { id: 3, cat: "Тежегіш жүйесі", name: "Тежегіш жүйесін жөндеу", price: 45000, duration: "1.5 сағ" },
+    { id: 4, cat: "Агрегат жөндеу", name: "Қозғалтқыш жөндеу", price: 85000, duration: "1-2 күн" },
+    { id: 5, cat: "Электрика", name: "Электрика жөндеу", price: 35000, duration: "1.5 сағ" },
+    { id: 6, cat: "Жүріс бөлігі", name: "Ходовая бөлігін жөндеу", price: 40000, duration: "2 сағ" }
+  ];
+
+  const DEMO_IMG_BRAKE = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180'><rect width='100%' height='100%' fill='#1e293b'/><circle cx='150' cy='88' r='55' fill='#475569' stroke='#94a3b8' stroke-width='7'/><circle cx='150' cy='88' r='20' fill='#0f172a'/><path d='M182 48 A55 55 0 0 1 200 120' stroke='#ef4444' stroke-width='12' fill='none'/><text x='150' y='165' fill='#f8fafc' font-family='Arial' font-size='12' text-anchor='middle'>Тежегіш колодкасы тексерілді</text></svg>`);
+  const DEMO_IMG_OIL = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180'><rect width='100%' height='100%' fill='#0f172a'/><rect x='105' y='30' width='90' height='105' rx='10' fill='#d97706'/><text x='150' y='90' fill='#fff' font-family='Arial' font-weight='bold' font-size='16' text-anchor='middle'>5W-30</text><text x='150' y='162' fill='#f8fafc' font-family='Arial' font-size='12' text-anchor='middle'>Май деңгейі қалыпты</text></svg>`);
+
+  const STATUS_MAP = {
+    completed: { label: "Аяқталды", cls: "st-completed" },
+    in_progress: { label: "Жөндеуде", cls: "st-in_progress" },
+    pending: { label: "Қабылданды", cls: "st-pending" },
+    diagnostics: { label: "Диагностикада", cls: "st-diagnostics" }
+  };
+
+  const DEFAULT_USERS = [
+    { id: "USR-01", name: "Әкімші", role: "admin", roleLabel: "Администратор", phone: "+7 700 000 00 00", email: "admin@autoservice.kz", car: "-", plate: "-", pass: "admin123" },
+    { id: "USR-02", name: "Асқар Әлиев", role: "client", roleLabel: "Клиент", phone: "+7 701 111 22 33", email: "askar@mail.kz", car: "Toyota Camry 70", plate: "777 AAA 01", pass: "1234" },
+    { id: "USR-03", name: "Нұрлан Сәрсенов", role: "client", roleLabel: "Клиент", phone: "+7 702 333 44 55", email: "nurlan@mail.kz", car: "Hyundai Tucson", plate: "540 KZA 02", pass: "1234" },
+    { id: "USR-04", name: "Марат Омаров", role: "client", roleLabel: "Клиент", phone: "+7 777 555 66 77", email: "marat@mail.kz", car: "Kia K5", plate: "123 BDA 01", pass: "1234" }
+  ];
+
+  const DEFAULT_ORDERS = [
+    { id: "#0128", client: "Асқар Әлиев", phone: "+7 701 111 22 33", car: "Toyota Camry 70", plate: "777 AAA 01", serviceId: 1, amount: 25000, status: "completed", dateFmt: "26.11.2026", dateIso: TODAY_ISO, box: "Бокс 1", time: "09:00", mechanic: "Қайрат Б.", comment: "Май мен сүзгілер толық ауыстырылды.", media: [{ type: "image", src: DEMO_IMG_OIL, caption: "Жаңа май құйылды" }], approved: true },
+    { id: "#0127", client: "Нұрлан Сәрсенов", phone: "+7 702 333 44 55", car: "Hyundai Tucson", plate: "540 KZA 02", serviceId: 2, amount: 15000, status: "in_progress", dateFmt: "26.11.2026", dateIso: TODAY_ISO, box: "Бокс 2", time: "10:30", mechanic: "Дәурен Т.", comment: "Компьютерлік диагностика және тежегіш тексерісі.", media: [{ type: "image", src: DEMO_IMG_BRAKE, caption: "Тежегіш колодкасы" }], approved: null },
+    { id: "#0126", client: "Марат Омаров", phone: "+7 777 555 66 77", car: "Kia K5", plate: "123 BDA 01", serviceId: 3, amount: 45000, status: "pending", dateFmt: "25.11.2026", dateIso: "2026-11-25", box: "Бокс 3", time: "12:00", mechanic: "Ержан М.", comment: "", media: [], approved: null },
+    { id: "#0125", client: "Ержан Ахметов", phone: "+7 705 777 88 99", car: "BMW X5", plate: "888 MNA 05", serviceId: 4, amount: 85000, status: "in_progress", dateFmt: "25.11.2026", dateIso: "2026-11-25", box: "Бокс 1", time: "14:00", mechanic: "Қайрат Б.", comment: "Қозғалтқыш тығыздағышын ауыстыру жүріп жатыр.", media: [], approved: true },
+    { id: "#0124", client: "Азамат Беков", phone: "+7 707 999 00 11", car: "Lexus RX 350", plate: "321 ZZZ 02", serviceId: 5, amount: 35000, status: "completed", dateFmt: "24.11.2026", dateIso: "2026-11-24", box: "Бокс 2", time: "15:30", mechanic: "Алексей В.", comment: "Электр сымдары қалпына келтірілді.", media: [], approved: true }
+  ];
+
+  const DEFAULT_PARTS = [
+    { sku: "OIL-5W30", name: "Мотор майы 5W-30 (4L)", price: 18500, qty: 14 },
+    { sku: "FLT-012", name: "Май сүзгісі (Toyota / Lexus)", price: 4200, qty: 22 },
+    { sku: "BRK-405", name: "Алдыңғы тежегіш колодкасы", price: 16000, qty: 3 },
+    { sku: "SPK-990", name: "Иридий оталдыру шамы (дана)", price: 4800, qty: 18 }
+  ];
+
+  let users = JSON.parse(localStorage.getItem("as_users_v1")) || DEFAULT_USERS;
+  let currentUser = JSON.parse(localStorage.getItem("as_session_v1")) || users[0];
+  let orders = JSON.parse(localStorage.getItem("as_orders_v1")) || DEFAULT_ORDERS;
+  let parts = JSON.parse(localStorage.getItem("as_parts_v1")) || DEFAULT_PARTS;
+  let msgLogs = JSON.parse(localStorage.getItem("as_msgs_v1")) || [
+    { time: "10:15", channel: "WhatsApp", to: "Асқар Әлиев", text: "#0128 тапсырысы аяқталды. Сомасы: 25 000 ₸." },
+    { time: "11:05", channel: "Telegram", to: "Нұрлан Сәрсенов", text: "#0127 тапсырысы бойынша фото-есеп жүктелді." }
+  ];
+  let tempDetailMedia = [];
+
+  function saveState() {
+    localStorage.setItem("as_users_v1", JSON.stringify(users));
+    localStorage.setItem("as_session_v1", JSON.stringify(currentUser));
+    localStorage.setItem("as_orders_v1", JSON.stringify(orders));
+    localStorage.setItem("as_parts_v1", JSON.stringify(parts));
+    localStorage.setItem("as_msgs_v1", JSON.stringify(msgLogs));
+  }
+
+  function esc(str) {
+    return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(window._tt);
+    window._tt = setTimeout(() => t.style.display = "none", 3200);
+  }
+
+  function navigate(viewId, btn) {
+    document.querySelectorAll(".page-view").forEach(v => v.classList.remove("active"));
+    document.getElementById(`view-${viewId}`).classList.add("active");
+    if (btn) {
+      document.querySelectorAll(".menu-item").forEach(m => m.classList.remove("active"));
+      btn.classList.add("active");
+    }
+    document.getElementById("sidebar").classList.remove("open");
+    renderAllViews();
+  }
+
+  function renderDashboard() {
+    const baseTotal = 123 + orders.length;
+    const activeOrders = orders.filter(o => o.status === "in_progress" || o.status === "diagnostics").length;
+    const doneOrders = orders.filter(o => o.status === "completed").length;
+    const totalRev = orders.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+
+    document.getElementById("kpi-total").textContent = baseTotal;
+    document.getElementById("kpi-active").textContent = 32 + activeOrders;
+    document.getElementById("kpi-done").textContent = 85 + doneOrders;
+    document.getElementById("kpi-revenue").textContent = (3245000 + totalRev).toLocaleString("ru-RU") + " ₸";
+
+    const days = ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб", "Жс"];
+    const vals = [10, 14, 11, 13.5, 16.5, 14.5, 21 + Math.max(0, orders.length - 5)];
+    const w = 560, h = 195, padL = 36, padB = 28, padT = 16, padR = 16;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const maxV = 25;
+
+    let gridLines = "";
+    for (let v = 0; v <= 25; v += 5) {
+      const y = padT + plotH - (v / maxV) * plotH;
+      gridLines += `<line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+      gridLines += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="#64748b">${v}</text>`;
+    }
+
+    const pts = vals.map((v, i) => {
+      const x = padL + (i / (vals.length - 1)) * plotW;
+      const y = padT + plotH - (Math.min(v, maxV) / maxV) * plotH;
+      return { x, y, v, label: days[i] };
+    });
+
+    const linePath = pts.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(" ");
+    const areaPath = `${linePath} L ${pts[pts.length - 1].x} ${padT + plotH} L ${pts[0].x} ${padT + plotH} Z`;
+    const dots = pts.map(p => `
+      <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="#fff" stroke="#1d64f2" stroke-width="2.5"><title>${p.label}: ${p.v} тапсырыс</title></circle>
+      <text x="${p.x}" y="${h - 6}" text-anchor="middle" font-size="11" fill="#64748b">${p.label}</text>
+    `).join("");
+
+    document.getElementById("line-chart-container").innerHTML = `
+      <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; display:block;">
+        <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1d64f2" stop-opacity="0.28"/><stop offset="100%" stop-color="#1d64f2" stop-opacity="0.02"/></linearGradient></defs>
+        ${gridLines}<path d="${areaPath}" fill="url(#areaGrad)"/><path d="${linePath}" fill="none" stroke="#1d64f2" stroke-width="2.5" stroke-linejoin="round"/>${dots}
+      </svg>`;
+
+    const cDone = 85 + doneOrders, cProg = 32 + activeOrders, cPend = 6 + orders.filter(o => o.status === "pending").length;
+    const cAll = cDone + cProg + cPend;
+    const pDone = Math.round((cDone / cAll) * 100), pProg = Math.round((cProg / cAll) * 100), pPend = 100 - pDone - pProg;
+
+    document.getElementById("donut-chart-container").innerHTML = `
+      <svg width="164" height="164" viewBox="0 0 42 42">
+        <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#16a34a" stroke-width="5.5" stroke-dasharray="${pDone} ${100 - pDone}" stroke-dashoffset="25"></circle>
+        <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#1d64f2" stroke-width="5.5" stroke-dasharray="${pProg} ${100 - pProg}" stroke-dashoffset="${25 - pDone}"></circle>
+        <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e2e8f0" stroke-width="5.5" stroke-dasharray="${pPend} ${100 - pPend}" stroke-dashoffset="${25 - pDone - pProg}"></circle>
+        <text x="21" y="20.5" text-anchor="middle" font-size="6.2" font-weight="700" fill="#0f172a">${cAll}</text>
+        <text x="21" y="25.5" text-anchor="middle" font-size="2.7" fill="#64748b">тапсырыс</text>
+      </svg>
+      <div class="legend-list">
+        <div class="legend-item"><span class="legend-dot" style="background:#16a34a;"></span>Аяқталған — <strong>${cDone} (${pDone}%)</strong></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#1d64f2;"></span>Жөндеуде — <strong>${cProg} (${pProg}%)</strong></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#cbd5e1;"></span>Қабылданды — <strong>${cPend} (${pPend}%)</strong></div>
+      </div>`;
+
+    document.getElementById("recent-orders-tbody").innerHTML = orders.slice(0, 5).map(o => renderOrderRow(o, false)).join("");
+  }
+
+  function renderOrderRow(o, full) {
+    const srv = SERVICES.find(s => s.id === o.serviceId) || { name: "Қызмет" };
+    const st = STATUS_MAP[o.status] || STATUS_MAP.pending;
+    const eyeSvg = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    if (!full) {
+      return `<tr>
+        <td><span class="order-id" onclick="openDetailModal('${o.id}')">${esc(o.id)}</span></td>
+        <td>${esc(o.client)}</td><td>${esc(o.car)}</td><td>${esc(srv.name)}</td>
+        <td class="money">${Number(o.amount).toLocaleString("ru-RU")} ₸</td>
+        <td><span class="status-pill ${st.cls}">${st.label}</span></td><td>${esc(o.dateFmt)}</td>
+        <td><button class="eye-btn" onclick="openDetailModal('${o.id}')" title="Толығырақ">${eyeSvg}</button></td>
+      </tr>`;
+    }
+    return `<tr>
+      <td><span class="order-id" onclick="openDetailModal('${o.id}')">${esc(o.id)}</span></td>
+      <td><div>${esc(o.client)}</div><small style="color:var(--muted)">${esc(o.phone)}</small></td>
+      <td><div>${esc(o.car)}</div><small style="color:var(--muted)">${esc(o.plate)}</small></td>
+      <td><div>${esc(o.box)}</div><small style="color:var(--muted)">${esc(o.dateFmt)} • ${esc(o.time)}</small></td>
+      <td>${esc(srv.name)}</td><td>${esc(o.mechanic)}</td>
+      <td class="money">${Number(o.amount).toLocaleString("ru-RU")} ₸</td>
+      <td><span class="status-pill ${st.cls}">${st.label}</span></td>
+      <td><button class="eye-btn" onclick="openDetailModal('${o.id}')" title="Басқару">${eyeSvg}</button></td>
+    </tr>`;
+  }
+
+  function renderAllOrders() {
+    const q = (document.getElementById("orders-search").value || document.getElementById("global-search").value || "").toLowerCase();
+    const flt = document.getElementById("orders-filter").value;
+    const filtered = orders.filter(o => (flt === "all" || o.status === flt) && `${o.id} ${o.client} ${o.car} ${o.plate}`.toLowerCase().includes(q));
+    document.getElementById("all-orders-tbody").innerHTML = filtered.map(o => renderOrderRow(o, true)).join("") || `<tr><td colspan="9" style="text-align:center;color:var(--muted);">Тапсырыс табылмады</td></tr>`;
+  }
+
+  function handleGlobalSearch() {
+    const val = document.getElementById("global-search").value.toLowerCase();
+    document.getElementById("orders-search").value = val;
+    document.getElementById("recent-orders-tbody").innerHTML = orders
+      .filter(o => `${o.id} ${o.client} ${o.car} ${o.plate}`.toLowerCase().includes(val))
+      .slice(0, 5).map(o => renderOrderRow(o, false)).join("");
+    renderAllOrders();
+  }
+
+  function renderBoxMatrix() {
+    const date = document.getElementById("admin-schedule-date").value || TODAY_ISO;
+    let html = `<div class="sch-head">Уақыт</div>` + BOXES.map(b => `<div class="sch-head">${b}</div>`).join("");
+    SLOTS.forEach(slot => {
+      html += `<div class="sch-time">${slot}</div>`;
+      BOXES.forEach(box => {
+        const o = orders.find(x => x.dateIso === date && x.box === box && x.time === slot && x.status !== "completed");
+        html += o
+          ? `<div class="sch-cell occupied" onclick="openDetailModal('${o.id}')" style="cursor:pointer;"><strong style="font-size:0.8rem;">${esc(o.car)} (${esc(o.id)})</strong><span style="font-size:0.75rem;color:#334155;">${esc(o.client)} • ${esc(o.mechanic)}</span></div>`
+          : `<div class="sch-cell"><span style="text-align:center;color:#94a3b8;font-size:0.78rem;">Бос</span></div>`;
+      });
+    });
+    document.getElementById("admin-box-matrix").innerHTML = html;
+  }
+
+  function renderOtherSections() {
+    document.getElementById("clients-tbody").innerHTML = users.filter(u => u.role === "client").map(u => {
+      const cnt = orders.filter(o => o.client === u.name || o.phone === u.phone).length;
+      return `<tr><td><b>${esc(u.id)}</b></td><td>${esc(u.name)}</td><td>${esc(u.phone)}</td><td>${esc(u.email)}</td><td>${esc(u.car)}</td><td><b>${esc(u.plate)}</b></td><td>${cnt}</td></tr>`;
+    }).join("");
+
+    document.getElementById("cars-tbody").innerHTML = orders.map(o => {
+      const srv = SERVICES.find(s => s.id === o.serviceId) || { name: "-" };
+      const st = STATUS_MAP[o.status] || STATUS_MAP.pending;
+      return `<tr><td><b>${esc(o.plate)}</b></td><td>${esc(o.car)}</td><td>${esc(o.client)}</td><td>${esc(srv.name)}</td><td><span class="status-pill ${st.cls}">${st.label}</span></td></tr>`;
+    }).join("");
+
+    document.getElementById("services-tbody").innerHTML = SERVICES.map(s => `
+      <tr><td>SRV-0${s.id}</td><td>${esc(s.cat)}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.duration)}</td><td class="money">${s.price.toLocaleString("ru-RU")} ₸</td></tr>
+    `).join("");
+
+    document.getElementById("warehouse-tbody").innerHTML = parts.map((p, idx) => `
+      <tr>
+        <td><b>${esc(p.sku)}</b></td><td>${esc(p.name)}</td><td class="money">${p.price.toLocaleString("ru-RU")} ₸</td>
+        <td><b>${p.qty} дана</b></td>
+        <td><span class="status-pill ${p.qty <= 5 ? 'st-pending' : 'st-completed'}">${p.qty <= 5 ? 'Азайып қалды' : 'Қоймада бар'}</span></td>
+        <td><button class="btn btn-outline btn-sm" onclick="adjustPart(${idx}, 1)">+1</button> <button class="btn btn-outline btn-sm" onclick="adjustPart(${idx}, -1)">-1</button></td>
+      </tr>
+    `).join("");
+
+    document.getElementById("payments-tbody").innerHTML = orders.map(o => {
+      const srv = SERVICES.find(s => s.id === o.serviceId) || { name: "-" };
+      const paid = o.status === "completed";
+      return `<tr><td><span class="order-id" onclick="openDetailModal('${o.id}')">${esc(o.id)}</span></td><td>${esc(o.client)}</td><td>${esc(srv.name)}</td><td class="money">${Number(o.amount).toLocaleString("ru-RU")} ₸</td><td>${paid ? "Kaspi QR / Карта" : "Күтілуде"}</td><td><span class="status-pill ${paid ? 'st-completed' : 'st-pending'}">${paid ? 'Төленді' : 'Төленбеген'}</span></td></tr>`;
+    }).join("");
+
+    const maxM = Math.max(1, ...MECHANICS.slice(1).map(m => orders.filter(o => o.mechanic === m).length));
+    document.getElementById("mechanics-report").innerHTML = MECHANICS.slice(1).map(m => {
+      const c = orders.filter(o => o.mechanic === m).length;
+      const pct = Math.round((c / maxM) * 100);
+      return `<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:0.86rem;font-weight:600;margin-bottom:4px;"><span>${esc(m)}</span><span>${c} тапсырыс</span></div><div style="height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--primary);"></div></div></div>`;
+    }).join("");
+
+    document.getElementById("notif-badge").textContent = msgLogs.length;
+    document.getElementById("messages-log-box").innerHTML = msgLogs.map(m => `
+      <div style="padding:12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:#f8fafc;">
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;"><strong>${esc(m.channel)} — ${esc(m.to)}</strong><span style="color:var(--muted)">${esc(m.time)}</span></div>
+        <div style="font-size:0.86rem;">${esc(m.text)}</div>
+      </div>
+    `).join("") || "<p style='color:var(--muted);'>Хабарламалар жоқ</p>";
+  }
+
+  function adjustPart(idx, delta) { parts[idx].qty = Math.max(0, parts[idx].qty + delta); saveState(); renderOtherSections(); }
+  function clearMessageLogs() { msgLogs = []; saveState(); renderOtherSections(); }
+  function openNotificationsPanel() { navigate("reports", document.querySelectorAll(".menu-item")[7]); }
+
+  function openNewOrderModal() {
+    document.getElementById("ao-service").innerHTML = SERVICES.map(s => `<option value="${s.id}">${esc(s.name)} (${s.price.toLocaleString("ru-RU")} ₸)</option>`).join("");
+    document.getElementById("ao-mech").innerHTML = MECHANICS.map(m => `<option value="${m}">${esc(m)}</option>`).join("");
+    document.getElementById("ao-date").value = TODAY_ISO;
+    document.getElementById("new-order-modal").classList.add("open");
+  }
+
+  document.getElementById("admin-order-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const srv = SERVICES.find(s => s.id === Number(document.getElementById("ao-service").value));
+    const dateIso = document.getElementById("ao-date").value;
+    const p = dateIso.split("-");
+    const newOrder = {
+      id: `#0${129 + orders.length}`,
+      client: document.getElementById("ao-name").value.trim(),
+      phone: document.getElementById("ao-phone").value.trim(),
+      car: document.getElementById("ao-car").value.trim(),
+      plate: document.getElementById("ao-plate").value.trim().toUpperCase(),
+      serviceId: srv.id, amount: srv.price, status: "pending",
+      dateFmt: `${p[2]}.${p[1]}.${p[0]}`, dateIso,
+      box: document.getElementById("ao-box").value, time: document.getElementById("ao-time").value,
+      mechanic: document.getElementById("ao-mech").value, comment: "", media: [], approved: null
+    };
+    orders.unshift(newOrder);
+    msgLogs.unshift({ time: new Date().toTimeString().slice(0,5), channel: "WhatsApp", to: newOrder.client, text: `${newOrder.id} тапсырысы қабылданды (${newOrder.box}, ${newOrder.time}).` });
+    saveState(); this.reset(); closeModal("new-order-modal"); renderAllViews(); toast(`Тапсырыс ${newOrder.id} қосылды.`);
+  });
+
+  function openDetailModal(id) {
+    const o = orders.find(x => x.id === id);
+    if (!o) return;
+    document.getElementById("detail-id").value = o.id;
+    document.getElementById("detail-title").textContent = `Тапсырыс ${o.id} — ${o.car}`;
+    document.getElementById("detail-info").innerHTML = `<b>Клиент:</b> ${esc(o.client)} (${esc(o.phone)})<br><b>Көлік / Мем. нөмір:</b> ${esc(o.car)} (${esc(o.plate)})<br><b>Уақыт / Бокс:</b> ${esc(o.dateFmt)} • ${esc(o.time)} (${esc(o.box)}) • <b>Сомасы:</b> ${Number(o.amount).toLocaleString("ru-RU")} ₸`;
+    document.getElementById("detail-status").value = o.status;
+    document.getElementById("detail-mech").innerHTML = MECHANICS.map(m => `<option value="${m}" ${o.mechanic === m ? "selected" : ""}>${esc(m)}</option>`).join("");
+    document.getElementById("detail-comment").value = o.comment || "";
+    tempDetailMedia = [...(o.media || [])];
+    renderDetailMedia();
+    const cleanPhone = o.phone.replace(/\D/g, "");
+    const waMsg = `Сәлеметсіз бе, ${o.client}. ${o.car} көлігіңіз бойынша ${o.id} тапсырысының күйі: ${STATUS_MAP[o.status].label}.`;
+    document.getElementById("detail-wa-link").href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMsg)}`;
+    document.getElementById("detail-modal").classList.add("open");
+  }
+
+  function renderDetailMedia() {
+    document.getElementById("detail-media-grid").innerHTML = tempDetailMedia.map((m, idx) => `
+      <div class="media-thumb">
+        ${m.type === "video" ? `<video src="${m.src}" controls></video>` : `<img src="${m.src}" />`}
+        <div class="media-cap" style="display:flex;justify-content:space-between;"><span>${esc(m.caption)}</span><button type="button" style="background:none;border:none;color:#f87171;cursor:pointer;" onclick="tempDetailMedia.splice(${idx},1);renderDetailMedia()">×</button></div>
+      </div>
+    `).join("");
+  }
+
+  function addDemoPhoto(type) {
+    tempDetailMedia.push({ type: "image", src: type === "brake" ? DEMO_IMG_BRAKE : DEMO_IMG_OIL, caption: type === "brake" ? "Тежегіш колодкасы" : "Май сүзгісі" });
+    renderDetailMedia();
+  }
+
+  function uploadDetailMedia(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.type.startsWith("video/")) {
+      tempDetailMedia.push({ type: "video", src: URL.createObjectURL(file), caption: file.name });
+      renderDetailMedia();
+    } else if (file.type.startsWith("image/")) {
+      const r = new FileReader();
+      r.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement("canvas");
+          const s = Math.min(1, 500 / img.width);
+          c.width = img.width * s; c.height = img.height * s;
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          tempDetailMedia.push({ type: "image", src: c.toDataURL("image/jpeg", 0.75), caption: file.name });
+          renderDetailMedia();
+        };
+        img.src = e.target.result;
+      };
+      r.readAsDataURL(file);
+    }
+  }
+
+  function saveOrderDetails() {
+    const o = orders.find(x => x.id === document.getElementById("detail-id").value);
+    if (!o) return;
+    o.status = document.getElementById("detail-status").value;
+    o.mechanic = document.getElementById("detail-mech").value;
+    o.comment = document.getElementById("detail-comment").value.trim();
+    o.media = [...tempDetailMedia];
+    msgLogs.unshift({ time: new Date().toTimeString().slice(0,5), channel: "Telegram / WA", to: o.client, text: `${o.id} жаңартылды: ${STATUS_MAP[o.status].label}. ${o.comment ? "Есеп: " + o.comment : ""}` });
+    saveState(); closeModal("detail-modal"); renderAllViews(); toast(`${o.id} мәліметі сақталды.`);
+  }
+
+  function sendTelegramSim() {
+    const o = orders.find(x => x.id === document.getElementById("detail-id").value);
+    if (!o) return;
+    msgLogs.unshift({ time: new Date().toTimeString().slice(0,5), channel: "Telegram Bot", to: o.client, text: `Құрметті ${o.client}, ${o.car} көлігіңіз бойынша ${o.id} тапсырысы: ${STATUS_MAP[o.status].label}.` });
+    saveState(); renderOtherSections(); toast("Telegram хабарламасы жіберілді.");
+  }
+
+  function initClientPortal() {
+    document.getElementById("cb-service").innerHTML = SERVICES.map(s => `<option value="${s.id}">${esc(s.name)} — ${s.price.toLocaleString("ru-RU")} ₸</option>`).join("");
+    document.getElementById("cb-date").value = TODAY_ISO;
+    document.getElementById("admin-schedule-date").value = TODAY_ISO;
+    renderClientBookingSlots();
+  }
+
+  function renderClientBookingSlots() {
+    const date = document.getElementById("cb-date").value, box = document.getElementById("cb-box").value;
+    document.getElementById("cb-time").value = ""; document.getElementById("cb-slot-info").textContent = "";
+    document.getElementById("cb-slots").innerHTML = SLOTS.map(s => {
+      const busy = orders.some(o => o.dateIso === date && o.box === box && o.time === s && o.status !== "completed");
+      return `<button type="button" class="slot-btn" ${busy ? "disabled" : ""} onclick="pickClientSlot('${s}', this)">${s}</button>`;
+    }).join("");
+  }
+
+  function pickClientSlot(s, btn) {
+    document.querySelectorAll("#cb-slots .slot-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    document.getElementById("cb-time").value = s;
+    document.getElementById("cb-slot-info").textContent = `(${s})`;
+  }
+
+  document.getElementById("client-booking-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const t = document.getElementById("cb-time").value;
+    if (!t) { toast("Уақытты (тайм-слот) таңдаңыз."); return; }
+    const srv = SERVICES.find(s => s.id === Number(document.getElementById("cb-service").value));
+    const dateIso = document.getElementById("cb-date").value, p = dateIso.split("-");
+    const newId = `#0${129 + orders.length}`;
+    orders.unshift({
+      id: newId, client: document.getElementById("cb-name").value.trim(), phone: document.getElementById("cb-phone").value.trim(),
+      car: document.getElementById("cb-car").value.trim(), plate: document.getElementById("cb-plate").value.trim().toUpperCase(),
+      serviceId: srv.id, amount: srv.price, status: "pending", dateFmt: `${p[2]}.${p[1]}.${p[0]}`, dateIso,
+      box: document.getElementById("cb-box").value, time: t, mechanic: "Тағайындалмаған", comment: "", media: [], approved: null
+    });
+    saveState(); this.reset(); document.getElementById("cb-date").value = TODAY_ISO;
+    renderClientBookingSlots(); renderAllViews(); quickClientTrack(newId); toast(`Тапсырыс қабылданды: ${newId}`);
+  });
+
+  function quickClientTrack(q) { document.getElementById("cb-track-input").value = q; clientTrackOrder(); }
+
+  function clientTrackOrder() {
+    const q = document.getElementById("cb-track-input").value.trim().toUpperCase();
+    const res = document.getElementById("cb-track-result");
+    const o = orders.find(x => x.id.toUpperCase() === q || x.plate.toUpperCase() === q);
+    if (!o) { res.innerHTML = `<div style="padding:12px;background:var(--danger-soft);color:var(--danger);border-radius:8px;font-size:0.86rem;">Тапсырыс табылмады.</div>`; return; }
+    const st = STATUS_MAP[o.status] || STATUS_MAP.pending;
+    const thumbs = (o.media || []).map(m => `<div class="media-thumb">${m.type === "video" ? `<video src="${m.src}" controls></video>` : `<img src="${m.src}" />`}<div class="media-cap">${esc(m.caption)}</div></div>`).join("");
+    res.innerHTML = `
+      <div style="padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:9px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><strong>${esc(o.id)} — ${esc(o.car)}</strong><span class="status-pill ${st.cls}">${st.label}</span></div>
+        <div style="font-size:0.85rem;color:#334155;">
+          <div>Бокс / Уақыт: <b>${esc(o.box)}, ${esc(o.time)}</b> (${esc(o.dateFmt)})</div>
+          <div>Шебер: <b>${esc(o.mechanic)}</b> • Сомасы: <b>${Number(o.amount).toLocaleString("ru-RU")} ₸</b></div>
+          ${o.comment ? `<div style="margin-top:8px;"><b>Шебер есебі:</b> ${esc(o.comment)}</div>` : ""}
+        </div>
+        ${thumbs ? `<div class="media-grid">${thumbs}</div>` : ""}
+        ${o.media && o.media.length && o.approved === null ? `<div style="margin-top:12px;display:flex;gap:8px;"><button class="btn btn-success btn-sm" onclick="approveFromClient('${o.id}', true)">Жөндеуге келісемін</button><button class="btn btn-outline btn-sm" onclick="approveFromClient('${o.id}', false)">Қайта хабарласу</button></div>` : (o.approved === true ? `<div style="margin-top:10px;color:var(--success);font-size:0.84rem;font-weight:600;">Клиент келісімі расталды</div>` : "")}
+      </div>`;
+  }
+
+  function approveFromClient(id, val) {
+    const o = orders.find(x => x.id === id);
+    if (!o) return;
+    o.approved = val;
+    if (val && o.status === "pending") o.status = "in_progress";
+    saveState(); clientTrackOrder(); renderAllViews(); toast(val ? "Келісіміңіз расталды." : "Менеджерге хабар жіберілді.");
+  }
+
+  function openAuthModal(mode) { switchAuthTab(mode); document.getElementById("auth-modal").classList.add("open"); }
+  function switchAuthTab(mode) {
+    const isL = mode === "login";
+    document.getElementById("atab-login").classList.toggle("active", isL);
+    document.getElementById("atab-reg").classList.toggle("active", !isL);
+    document.getElementById("login-form").style.display = isL ? "block" : "none";
+    document.getElementById("reg-form").style.display = isL ? "none" : "block";
+    document.getElementById("auth-title").textContent = isL ? "Жүйеге кіру" : "Клиентті тіркеу";
+  }
+
+  function updateUserHeader() {
+    document.getElementById("top-user-name").textContent = currentUser.name;
+    document.getElementById("top-user-role").textContent = currentUser.roleLabel;
+    document.getElementById("top-avatar").textContent = currentUser.name.charAt(0).toUpperCase();
+    if (currentUser.role === "client") {
+      document.getElementById("cb-name").value = currentUser.name;
+      document.getElementById("cb-phone").value = currentUser.phone;
+      document.getElementById("cb-car").value = currentUser.car;
+      document.getElementById("cb-plate").value = currentUser.plate;
+    }
+  }
+
+  document.getElementById("login-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const idf = document.getElementById("l-id").value.trim().toLowerCase(), pass = document.getElementById("l-pass").value;
+    const found = users.find(u => (u.email.toLowerCase() === idf || u.phone === idf) && u.pass === pass);
+    if (!found) { document.getElementById("l-err").textContent = "Email/телефон немесе құпиясөз қате."; document.getElementById("l-err").style.display = "block"; return; }
+    currentUser = found; saveState(); updateUserHeader(); closeModal("auth-modal");
+    if (found.role === "client") navigate("client-portal", null);
+    else navigate("dashboard", document.querySelectorAll(".menu-item")[0]);
+    toast(`Қош келдіңіз, ${found.name}`);
+  });
+
+  document.getElementById("reg-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const p1 = document.getElementById("r-pass").value, p2 = document.getElementById("r-pass2").value;
+    if (p1 !== p2) { document.getElementById("r-err").textContent = "Құпиясөздер сәйкес келмейді."; document.getElementById("r-err").style.display = "block"; return; }
+    const newUser = {
+      id: "USR-0" + (users.length + 1), name: document.getElementById("r-name").value.trim(),
+      phone: document.getElementById("r-phone").value.trim(), email: document.getElementById("r-email").value.trim().toLowerCase(),
+      car: document.getElementById("r-car").value.trim(), plate: document.getElementById("r-plate").value.trim().toUpperCase(),
+      pass: p1, role: "client", roleLabel: "Клиент"
+    };
+    users.push(newUser); currentUser = newUser; saveState(); this.reset();
+    updateUserHeader(); closeModal("auth-modal"); renderAllViews(); navigate("client-portal", null); toast("Тіркелу сәтті аяқталды.");
+  });
+
+  function saveSettings() {
+    document.getElementById("sidebar-hours").textContent = `Жұмыс режимі: ${document.getElementById("setting-hours").value.trim()}`;
+    toast("Баптаулар сақталды.");
+  }
+
+  function resetAllDemo() {
+    orders = JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+    parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+    users = JSON.parse(JSON.stringify(DEFAULT_USERS));
+    saveState(); renderAllViews(); toast("Демо деректер қалпына келтірілді.");
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+  function renderAllViews() { renderDashboard(); renderAllOrders(); renderBoxMatrix(); renderOtherSections(); }
+
+  initClientPortal();
+  updateUserHeader();
+  renderAllViews();
+</script>
+</body>
+</html>
